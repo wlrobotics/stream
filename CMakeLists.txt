@@ -14,6 +14,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty)
 find_package(jsoncpp REQUIRED)
 
 link_directories("/usr/lib/")
+link_directories("/usr/lib/x86_64-linux-gnu/")
 
 
 include_directories("/usr/include/jsoncpp/")
@@ -43,7 +44,7 @@ list(APPEND CXX_API_TARGETS mov flv)
 file(GLOB ToolKit_src_list ${ToolKit_Root}/*/*.cpp ${ToolKit_Root}/*/*.h ${ToolKit_Root}/*/*.c)
 file(GLOB MediaKit_src_list ${MediaKit_Root}/*/*.cpp ${MediaKit_Root}/*/*.h ${MediaKit_Root}/*/*.c)
 
-list(APPEND LINK_LIB_LIST pthread)
+list(APPEND LINK_LIB_LIST pthread jsoncpp)
 list(APPEND LINK_LIB_LIST dl)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/server)

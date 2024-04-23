@@ -9,10 +9,6 @@
 #include <algorithm>
 #include <unordered_map>
 
-extern "C" {
-#include "libavutil/error.h"
-}
-
 #include "onceToken.h"
 #include "Util/File.h"
 #include "Util/logger.h"
@@ -292,9 +288,7 @@ int gb2312_to_utf8(char *sourcebuf, size_t sourcelen, char *destbuf, size_t dest
 }
 
 std::string ffmpeg_error(int errnum) {
-    char buffer[AV_ERROR_MAX_STRING_SIZE] = {0};
-    av_strerror(errnum, buffer, AV_ERROR_MAX_STRING_SIZE);
-    return buffer;
+    return "";
 }
 
 //TODO:判断因更加准确，具体到数字含义，如行政区域

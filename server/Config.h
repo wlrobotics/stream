@@ -32,7 +32,7 @@ struct config_info {
     } grpc;
     
     struct {
-        unsigned int port;
+        unsigned int port = 554;
         std::unordered_map<std::string, std::string> ffmpeg_options;
     } rtsp;
 
@@ -45,7 +45,7 @@ struct config_info {
     } rtp;
 
     struct {
-        unsigned int port;
+        unsigned int port = 8088;
     } http;
 
     struct {

@@ -34,20 +34,9 @@ void signal_handler(int signo) {
 int main(int argc, char* argv[]) {
     using namespace toolkit;
     using namespace mediakit;
-    if(argc < 2) {
-        std::cerr << "input arg error!" << std::endl;
-        return -1;
-    }
 
     Logger::Instance().add(std::make_shared<ConsoleChannel>("ConsoleChannel", LInfo));
     
-    Config config;
-    bool b_ret = config.init(std::string(argv[1]) + "/stream.json");
-    if(!b_ret) {
-        std::cerr << "config file error!" << std::endl;
-        return -1;
-    }
-
     Logger::Instance().setWriter(std::make_shared<AsyncLogWriter>());
     Logger::Instance().setLevel((LogLevel)ConfigInfo.log.level);
 
@@ -61,15 +50,17 @@ int main(int argc, char* argv[]) {
     EventPollerPool::setPoolSize(ConfigInfo.network.epoll_size);
 
     std::string host = "0.0.0.0";
-    if(ConfigInfo.network.enabled_ipv6) {
-        host = "::0";
-    }
 
     TcpServer::Ptr rtsp_server = std::make_shared<TcpServer>();
     rtsp_server->start<RtspSession>(ConfigInfo.rtsp.port, host);
 
     TcpServer::Ptr http_server = std::make_shared<TcpServer>();
     http_server->start<WebSocketSession<HttpSession>>(ConfigInfo.http.port, host);
+
+
+    while(true) {
+        std::this_thread::sleep_for(std::chrono::seconds(100));
+    }
     
     return 0;
 }
