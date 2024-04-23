@@ -1,7 +1,5 @@
 ﻿#include "MediaSink.h"
 
-#include "EventReport.h"
-
 //最多等待未初始化的Track 10秒，超时之后会忽略未初始化的Track
 #define MAX_WAIT_MS_READY 10000
 
@@ -54,13 +52,6 @@ void MediaSink::inputFrame(const Frame::Ptr &frame) {
     }
     inputframe_valid_ = true;
     it->second->inputFrame(frame);
-    if(it->second->getTrackType() == TrackVideo) {
-        VideoTrack::Ptr video_track = dynamic_pointer_cast<VideoTrack>(it->second);
-        std::string details;
-        if(video_track->resolution_is_change(details)) {
-            EventReport::Instance().report(stream_id_, EventReport::resolution_is_change, details);
-        }
-    }
     checkTrackIfReady(nullptr);
 }
 

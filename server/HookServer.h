@@ -6,8 +6,6 @@
 #include "Common/MediaSource.h"
 #include "Common/Parser.h"
 #include "Http/HttpSession.h"
-#include "RPC/FlowRPCClient.h"
-#include "Status.h"
 class HookServer {
 public:
     HookServer() = default;
@@ -18,7 +16,7 @@ public:
     bool init();
 
     void set_enabled(bool enable);
-    Status not_found_stream(const mediakit::MediaInfo &args);
+    int not_found_stream(const mediakit::MediaInfo &args);
     bool none_stream_reader(mediakit::MediaSource &sender);
     bool retrieve_stream(std::uint32_t ssrc, std::string& stream_id);
     std::tuple<std::string, HttpSession::KeyValue, std::string> 

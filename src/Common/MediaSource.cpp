@@ -295,15 +295,7 @@ static void findAsync_l(const MediaInfo &info, const std::shared_ptr<TcpSession>
     //监听媒体注册事件
     NoticeCenter::Instance().addListener(listener_tag, Broadcast::kBroadcastMediaChanged, on_regist);
 
-    Status st = HookServer::Instance().not_found_stream(info);
-    if(st != SUCCESS) {
-        ErrorL << info._streamid << ", pull stream failed:" << status_to_string(st);
-        cancel_all();
-        //告诉播放器，流不存在，这样会立即断开播放器
-        cb(nullptr);
-    } else {
-        InfoL << info._streamid << ", pull stream success";  //增加耗时统计
-    }
+    HookServer::Instance().not_found_stream(info);
 }
 
 void MediaSource::findAsync(const MediaInfo &info, const std::shared_ptr<TcpSession> &session,const function<void(const Ptr &src)> &cb){

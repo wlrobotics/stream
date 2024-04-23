@@ -34,17 +34,6 @@ public:
     }
 
     void inputFrame(const Frame::Ptr &frame) override {
-        if(frame->sei_enabled) {
-            std::string sei_payload_json;
-            SEIParser::sei_payload_marshal(frame->sei_payload, sei_payload_json);
-            FMP4Packet::Ptr packet = std::make_shared<FMP4Packet>(std::move(sei_payload_json));
-            packet->time_stamp = frame->dts();
-            _media_src->onWrite(std::move(packet), false);
-        } else if(!frame->raw_sei_payload_.empty()) {
-            FMP4Packet::Ptr packet = std::make_shared<FMP4Packet>(std::move(frame->raw_sei_payload_));
-            packet->time_stamp = frame->dts();
-            _media_src->onWrite(std::move(packet), false);
-        }
         MP4MuxerMemory::inputFrame(frame);
     }
 

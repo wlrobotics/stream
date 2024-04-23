@@ -13,9 +13,6 @@
 
 #include "ProcessInterface.h"
 #include "Common/MultiMediaSourceMuxer.h"
-#include "Device/HKDevice.h"
-#include "Device/RecordAbility.h"
-#include "Device/IDevice.h"
 
 namespace mediakit {
 
@@ -55,9 +52,6 @@ public:
     uint32_t get_byte_rate(){return speed_.getSpeed(false);};
     int get_rtp_loss_rate();
 
-    std::uint64_t get_record_len();
-    std::uint64_t get_record_time();
-
 protected:
     void inputFrame(const Frame::Ptr &frame) override;
     void addTrack(const Track::Ptr & track) override;
@@ -86,7 +80,6 @@ private:
     ProcessInterface::Ptr _process;
     MultiMediaSourceMuxer::Ptr _muxer;
 
-    IDevice::Ptr dev_ = nullptr;
     unsigned int frame_count_ = 0;
     Stamp _stamp;
 };

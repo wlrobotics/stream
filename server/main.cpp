@@ -10,13 +10,8 @@
 #include "Rtsp/RtspSession.h"
 #include "Http/HttpSession.h"
 #include "Http/WebSocketSession.h"
-#include "RPC/RPCServer.h"
-#include "EventReport.h"
-#include "Device/DeviceManager.h"
-#include "Record/RecordUploader.h"
 #include "Config.h"
 #include "HookServer.h"
-#include "ServiceManager.h"
 
 void signal_handler(int signo) {
     int nptrs;
@@ -61,16 +56,7 @@ int main(int argc, char* argv[]) {
         signal(SIGABRT, signal_handler);
     }
 
-    FlowRPCClient::Instance().init();
-
     HookServer::Instance().init();
-
-    if(ConfigInfo.service.enabled) {
-        ServiceManager::Instance().init();
-    } else {
-        HookServer::Instance().set_enabled(true);
-        RPCServer::Instance().set_enabled(true);
-    }
 
     EventPollerPool::setPoolSize(ConfigInfo.network.epoll_size);
 
@@ -84,14 +70,6 @@ int main(int argc, char* argv[]) {
 
     TcpServer::Ptr http_server = std::make_shared<TcpServer>();
     http_server->start<WebSocketSession<HttpSession>>(ConfigInfo.http.port, host);
-
-    DeviceManager::Instance().init();
-
-    RecordUploader::Instance().init();
-
-    EventReport::Instance().init();
-
-    RPCServer::Instance().init();
     
     return 0;
 }

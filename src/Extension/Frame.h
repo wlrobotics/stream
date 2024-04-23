@@ -15,7 +15,6 @@
 #include <functional>
 #include "Util/RingBuffer.h"
 #include "Network/Socket.h"
-#include "SEIParser.h"
 
 using namespace std;
 using namespace toolkit;
@@ -103,7 +102,7 @@ public:
     std::uint64_t get_ntp_stamp();
     
     bool sei_enabled = false;
-    SEIParser::SEIPayload sei_payload;
+
 
     std::string raw_sei_payload_;
     

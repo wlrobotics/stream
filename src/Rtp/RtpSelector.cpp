@@ -3,8 +3,6 @@
 #include <stddef.h>
 
 #include "RtpSplitter.h"
-#include "EventReport.h"
-#include "HookServer.h"
 
 namespace mediakit{
 
@@ -54,9 +52,6 @@ RtpProcess::Ptr RtpSelector::getProcess(const std::uint32_t ssrc) {
     }
     
     std::string stream_id;
-    if(!HookServer::Instance().retrieve_stream(ssrc, stream_id)) {
-        return nullptr;
-    }
 
     RtpProcessHelper::Ptr process = std::make_shared<RtpProcessHelper>(stream_id, shared_from_this());
     process->attachEvent();
@@ -155,7 +150,6 @@ void RtpSelector::onManager() {
             }
             std::string stream_id = it->second->getProcess()->getIdentifier();
             ErrorL << "RtpProcess timeout:" << stream_id;
-            EventReport::Instance().report(stream_id, EventReport::network_offline, "revice rtp timeout");
             _map_ssrc_streamid.erase(stream_id);
             clear_list.emplace_back(it->second->getProcess());
             it = _map_rtp_process.erase(it);

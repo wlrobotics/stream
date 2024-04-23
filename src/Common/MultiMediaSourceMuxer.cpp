@@ -14,7 +14,6 @@
 #include "MultiMediaSourceMuxer.h"
 #include "Config.h"
 #include "json/json.h"
-#include "SEIParser.h"
 
 namespace mediakit {
 
@@ -162,8 +161,6 @@ MultiMediaSourceMuxer::MultiMediaSourceMuxer(const string &vhost,
                                                     bool enable_rtsp, bool enable_rtmp) : stream_id_(stream){
     _muxer.reset(new MultiMuxerPrivate(vhost, app, stream, enable_rtsp, enable_rtmp));
     _muxer->setTrackListener(this);
-    live_sei_frame_.reserve(SEIParser::sei_packet_max_size);
-    analyzer_sei_payload_.reserve(SEIParser::sei_packet_max_size);
 }
 
 MultiMediaSourceMuxer::~MultiMediaSourceMuxer() {}
@@ -221,90 +218,12 @@ void MultiMediaSourceMuxer::resetTracks() {
     _muxer->resetTracks();
 }
 
-/*
-仅rtsp推流走inputFrame
-相关逻辑依赖ZLM内部已经将帧全部split出来
-*/
 void MultiMediaSourceMuxer::inputFrame(const Frame::Ptr &frame) {
-    //过滤live SEI帧，保留analyzer SEI帧
-    if(frame->getCodecId() == CodecH264) {
-        if(H264_TYPE(*((uint8_t *)frame->data() + frame->prefixSize())) == H264Frame::NAL_SEI) {
-            SEIParser::demux_sei_frame((unsigned char*)frame->data(), frame->size(), analyzer_sei_payload_, true);
-            return ;
-        }
-    } else {
-        if(H265_TYPE(*((uint8_t *)frame->data() + frame->prefixSize())) == H265Frame::NAL_SEI_PREFIX) {
-            SEIParser::demux_sei_frame((unsigned char*)frame->data(), frame->size(), analyzer_sei_payload_, false);
-            return ;
-        }
-    }
-    
-    //对视频帧pts进行平滑处理
-    if(ConfigInfo.analyzer.modify_stamp) {
-        std::int64_t _dts = 0;
-        std::int64_t _pts = 0;
-        _stamp.revise(frame->dts(), frame->pts(), _dts, _pts, true);
-        frame->reset_pts(_pts);
-    }
-
-    //将最近的analyzer SEI帧绑定到当前视频帧上，并将当前视频帧的pts写入analyzer SEI帧中
-    if(!analyzer_sei_payload_.empty()) {
-        analyzer_sei_payload_[analyzer_sei_payload_.size() - 1] = ',';
-        analyzer_sei_payload_.append("\"pts\":" + std::to_string(frame->pts()) + "}");
-        frame->raw_sei_payload_ = analyzer_sei_payload_;
-        analyzer_sei_payload_.clear();
-    }
-
-    //InfoL << "frame:dts=" << frame->dts() << ",size=" << frame->size();
-
-    if(ConfigInfo.analyzer.trace_fps) {
-        trace_fps();
-    }
-
     _muxer->inputFrame(frame);
 }
 
-bool MultiMediaSourceMuxer::input_frame(const Frame::Ptr &frame) {
-    if(ConfigInfo.live.trace_fps) {
-        trace_fps();
-    }
-
-    //对视频帧pts进行平滑处理
-    if(ConfigInfo.live.modify_stamp) {
-        std::int64_t _dts = 0;
-        std::int64_t _pts = 0;
-        _stamp.revise(frame->dts(), frame->pts(), _dts, _pts, true);
-        frame->reset_pts(_pts);
-    }
-
-    //TODO:生成SEI frame应该支持指定start_sequence是3还是4，便于和视频流的start_sequence保持一致；
-    if(frame->sei_enabled) {
-        if (frame->getCodecId() == CodecH264) {
-            SEIParser::generate_sei_frame(live_sei_frame_, frame->sei_payload, true, true);
-            Frame::Ptr sei_frame = std::make_shared<H264FrameNoCacheAble>((char*)live_sei_frame_.c_str(),
-                                                                live_sei_frame_.size(),
-                                                                frame->dts(),
-                                                                frame->pts(),
-                                                                prefixSize(reinterpret_cast<const char*>(live_sei_frame_.c_str()),
-                                                                                                         live_sei_frame_.size()));
-                
-            _muxer->inputFrame(sei_frame);
-        } else {
-            SEIParser::generate_sei_frame(live_sei_frame_, frame->sei_payload, false, true);
-            Frame::Ptr sei_frame = std::make_shared<H265FrameNoCacheAble>((char*)live_sei_frame_.c_str(),
-                                                                live_sei_frame_.size(),
-                                                                frame->dts(),
-                                                                frame->pts(),
-                                                                prefixSize(reinterpret_cast<const char*>(live_sei_frame_.c_str()),
-                                                                                                         live_sei_frame_.size()));
-                
-            _muxer->inputFrame(sei_frame);
-        }
-        live_sei_frame_.clear();
-    }
-    
+bool MultiMediaSourceMuxer::input_frame(const Frame::Ptr &frame) {    
     _muxer->inputFrame(frame);
-    
     return _muxer->get_inputframe_valid();
 }
 
@@ -320,30 +239,5 @@ bool MultiMediaSourceMuxer::isEnabled(){
     }
     return _is_enable;
 }
-
-/*
-没必要统计长时间段的平均帧率;
-逻辑没必要太复杂;
-时间戳相同的frame被重复计算，比如sps，pps，I slice
-*/
-void MultiMediaSourceMuxer::trace_fps() {
-    trace_fps_frame_count_++;
-
-    std::uint64_t cur_time = toolkit::get_current_millisecond_steady();
-    if(trace_fps_start_time_ == 0) {
-        trace_fps_start_time_ = cur_time;
-    }
-   
-    if(cur_time - trace_fps_start_time_ > 1000) {
-        if(ConfigInfo.preview.trace_fps_print_rate != 0 && 
-            ++trace_fps_print_rate_ >= ConfigInfo.preview.trace_fps_print_rate) {
-            InfoL << "fps=" << trace_fps_frame_count_ << ",stream_id=" << stream_id_;
-            trace_fps_print_rate_ = 0;
-        }
-        trace_fps_frame_count_ = 0;
-        trace_fps_start_time_ = 0;
-    }
-}
-
 
 }//namespace mediakit

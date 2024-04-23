@@ -13,7 +13,6 @@
 #include "RtpSplitter.h"
 #include "Util/File.h"
 #include "Extension/H264.h"
-#include "Device/DeviceManager.h"
 #include "Config.h"
 
 namespace mediakit {
@@ -47,8 +46,6 @@ RtpProcess::RtpProcess(const string &stream_id) {
             });
         }
     }
-
-    dev_ = DeviceManager::Instance().find_device(stream_id);
     
     WarnP(this) << _media_info._streamid;
 }
@@ -110,40 +107,9 @@ bool RtpProcess::inputRtp(bool is_udp, const Socket::Ptr &sock,
 }
 
 void RtpProcess::inputFrame(const Frame::Ptr &frame) {
-    frame->set_ntp_stamp();
-
     _last_frame_time.resetTime();
 
-    //对视频帧pts进行平滑处理
-    std::int64_t _dts = frame->dts();
-    std::int64_t _pts = frame->pts();
-    _stamp.revise(frame->dts(), frame->pts(), _dts, _pts, true);
-    frame->reset_pts(_pts);
-
     _dts = frame->dts();
-
-    if (_save_file_video && frame->getTrackType() == TrackVideo) {
-        fwrite((uint8_t *) frame->data(), frame->size(), 1, _save_file_video.get());
-    }
-
-    if(ConfigInfo.record.enabled && dev_ != nullptr) {
-        dev_->record_frame(frame);
-    }
-
-    if(dev_ != nullptr) {
-        dev_->keep_alive();
-    }
-    
-    if(dev_ != nullptr && dev_->get_ptz_enabled() && (frame_count_++ >= ConfigInfo.ptz.frame_interval)) {
-        frame_count_ = 0;
-        PTZ info;
-        if(dev_->get_position(info)) {
-            frame->sei_enabled = true;
-            frame->sei_payload.data.ptz_current_pos[0] = info.pan;
-            frame->sei_payload.data.ptz_current_pos[1] = info.tilt;
-            frame->sei_payload.data.ptz_current_pos[2] = info.zoom;
-        }
-    }
 
     _muxer->input_frame(frame);
 }
@@ -250,20 +216,6 @@ int RtpProcess::get_rtp_loss_rate() {
         return 0;
     }
     return process->get_rtp_loss_rate();
-}
-
-std::uint64_t RtpProcess::get_record_len() {
-    if(dev_ != nullptr) {
-        return dev_->get_record_len();
-    }
-    return 0;
-}
-
-std::uint64_t RtpProcess::get_record_time() {
-    if(dev_ != nullptr) {
-        return dev_->get_record_time();
-    }
-    return 0;
 }
 
 }//namespace mediakit
