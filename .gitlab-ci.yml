@@ -1,0 +1,79 @@
+variables:
+  GIT_DEPTH: "3"
+  DOCKER_HOST: tcp://localhost:2375
+  OSS_ENDPOINT: https://oss-cn-shanghai.aliyuncs.com
+  QT_ENDPOINT: http://minio.vm-vas.supremind.io
+
+stages:
+  - image
+ 
+build_image:
+  stage: image
+  when: manual
+  tags:
+    - size-xxl
+  image: jdrouet/docker-with-buildx:20.10.17-0.8.2
+  services:
+    - docker:18.09.7-dind
+  variables: &dindVars
+    DOCKER_DRIVER: overlay2
+  cache:
+    policy: pull-push
+    key: dind-go
+    paths:
+      - /var/lib/docker
+  script:
+    # 为了能将镜像 push 到主仓库对应的 registry
+    # 需要在项目中的 Settings -> CICD -> Variables 里面设置 CI_ADMIN_USER / CI_ADMIN_TOKEN，请联系 repo maintainer
+    - docker run --privileged --rm tonistiigi/binfmt --install arm64
+    - docker login -u $CI_ADMIN_USER -p $CI_ADMIN_TOKEN $CI_REGISTRY
+    - IMAGE_TAG=$CI_REGISTRY/product/engine/stream/$CI_PROJECT_NAME:$(date '+%Y%m%d'-$CI_COMMIT_SHORT_SHA)
+    - docker buildx create --buildkitd-flags '--allow-insecure-entitlement network.host' --use
+    - docker buildx build --platform linux/amd64,linux/arm64 --network host -f docker/Dockerfile -t $IMAGE_TAG --push .
+    - echo $IMAGE_TAG
+
+build_deb:
+  stage: image
+  when: manual
+  before_script:
+    - wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /bin/mc -q && chmod +x /bin/mc
+    - /bin/mc config host add qt "${QT_ENDPOINT}"  "${QT_AK}"  "${QT_SK}"
+    - /bin/mc config host add oss "${OSS_ENDPOINT}"  "${OSS_AK}" "${OSS_SK}"
+    - echo "machine git.supremind.info login gitlab-ci-token password ${CI_JOB_TOKEN}"> ~/.netrc
+  tags:
+    - qt-huge
+  image: reg.supremind.info/hub/visionmind/aarch64-linux-gnu-gcc-7.5.0:v1
+  script:
+    - /bin/bash ./script/download_3rdparty.sh arm
+    - /bin/bash ./script/generated_grpc_code.sh arm
+    - export PATH=/usr/local/cmake-3.17.2-Linux-x86_64/bin:$PATH
+    - mkdir build && cd build && cmake -DCMAKE_TOOLCHAIN_FILE=../aarch64-linux-gnu-gcc-7.5.0-toolchain.cmake ../ -DCMAKE_BUILD_TYPE=Release && make -j4
+    - if [ -z "${CI_COMMIT_TAG}" ];
+      then  SPECIFIED_VERSION="$(date '+%Y%m%d'-$CI_COMMIT_SHORT_SHA)" DEVELOP_MODE=debug;
+      else SPECIFIED_VERSION="${CI_COMMIT_TAG}"  DEVELOP_MODE=release;
+      fi
+    - foldername=stream-${SPECIFIED_VERSION}  debname=${foldername}.deb
+    - mkdir -p deb/DEBIAN deb/usr/local/bin deb/etc/supremind  deb/lib/systemd/system deb/etc/init deb/etc/init.d
+    - cp ../conf/deb/control deb/DEBIAN
+    - cp ../conf/deb/postinst deb/DEBIAN
+    - cp ../conf/deb/stream.service deb/lib/systemd/system
+    - cp ../conf/deb/stream.json deb/etc/supremind
+    - cp ../conf/stat.xsl deb/etc/supremind
+    - cp ../conf/deb/stream.conf deb/etc/init
+    - cp ../conf/deb/stream deb/etc/init.d
+    - sed -i "s/SPECIFIED_VERSION/${SPECIFIED_VERSION}/g"  deb/lib/systemd/system/stream.service 
+    - cp stream  deb/usr/local/bin
+    - chmod -R 755 deb/DEBIAN deb/etc/init.d deb/usr/local/bin
+    - dpkg-deb --build deb ${debname}
+    - /bin/mc cp ${debname}  qt/devtools/${DEVELOP_MODE}/supre-edge/stream/linux/arm64/${foldername}/
+    - echo "$(md5sum ${debname} | cut -d" " -f1)" > md5.txt
+    - /bin/mc cp md5.txt  qt/devtools/${DEVELOP_MODE}/supre-edge/stream/linux/arm64/${foldername}/
+    - if [ -n "${CI_COMMIT_TAG}" ]; then
+      /bin/mc cp ${debname}  oss/ai-private-devtools/supre-edge/stream/linux/arm64/${foldername}/;
+      /bin/mc cp md5.txt  oss/ai-private-devtools/supre-edge/stream/linux/arm64/${foldername}/;
+      echo "https://ai-private-devtools.oss-cn-shanghai.aliyuncs.com/supre-edge/stream/linux/arm64/${foldername}/${debname}";
+      /bin/mc cp ../README.md  oss/ai-private-devtools/supre-edge/stream/linux/arm64/${foldername}/changelog.md;
+      /bin/mc cp ../README.md  qt/devtools/${DEVELOP_MODE}/supre-edge/stream/linux/arm64/${foldername}/changelog.md;
+      fi
+    - echo "http://minio.vm-vas.supremind.io/devtools/${DEVELOP_MODE}/supre-edge/stream/linux/arm64/${foldername}/${debname}"
+    - md5sum ${debname}

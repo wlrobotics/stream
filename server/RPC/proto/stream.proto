@@ -1,0 +1,127 @@
+syntax = "proto3";
+package vmr_proto;
+
+import "google/protobuf/empty.proto";
+// import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "ptz.proto";
+option go_package = "git.supremind.info/product/visionmind/proto/go/api";
+// ref: https://github.com/gogo/protobuf/blob/master/extensions.md
+// option (gogoproto.equal_all) = true;
+// option (gogoproto.goproto_unrecognized_all) = false;
+// option (gogoproto.populate_all) = true;
+
+enum URLType {
+	RTSP          = 0;
+	HTTP_FLV      = 1;
+	WebSocket_FLV = 2;
+	HTTP_MP4      = 3;
+	WebSocket_MP4 = 4;
+}
+
+message GetPTZInfoRequest {
+    string device_id = 1;
+}
+
+message GetPTZInfoResponse {
+    PTZ current_pos = 1; 
+}
+
+message DragZoomRequest {
+    string device_id = 1;
+    Rect   rect      = 2;
+}
+
+message CapturePictureRequest {
+    string device_id = 1;
+
+    //获取指定时间（time_stamp）的截图，若time_stamp为0，则返回最新时间点的截图，单位：毫秒;
+    uint64 time_stamp = 2;
+}
+
+message CapturePictureResponse {
+    uint32 width     = 1;
+    uint32 height    = 2;
+    //data use not BASE64 but binary 
+    bytes  picture   = 3;
+
+    //stream接收到picture这一帧画面的系统ntp时间;
+    uint64 ntp_time_stamp = 4;
+}
+
+message GotoPositionRequest {
+    string device_id = 1;
+    PTZ position     = 2; 
+}
+
+enum DeviceStatusType {
+    DEVICE_STATUS_UNKNOWN = 0;
+    DEVICE_STATUS_NORMAL  = 1;  //正常，无异常事件
+    DEVICE_STATUS_OFFLINE = 2;  //网络离线
+    DEVICE_STATUS_HIDE    = 3;  //画面遮挡
+}
+
+message GetDeviceStatusRequest {
+    string device_id = 1;
+}
+
+message GetDeviceStatusResponse {
+    DeviceStatusType status = 1;
+    uint32 time_stamp = 2;  //Unix time stamp (second)    
+    bytes  picture   = 3;   //data use not BASE64 but binary 
+}
+
+message UploadRecordRequest {
+    string  device_id        = 1;
+    string  bucket_name      = 2;
+    string  s3_object_key    = 3;
+    uint32  start_time       = 4;
+    uint32  end_time         = 5;
+}
+
+message UploadRecordResponse {
+    string url = 1;
+}
+
+message UpdateStreamRequest {
+    string  device_id          = 1;
+    int32   record_time_quota  = 2;
+}
+
+message GetStreamUrlRequest {
+    string  device_id    = 1;
+    URLType url_type     = 2;
+    bool    is_extra_net = 3;
+    string  task_id      = 4;
+}
+
+message GetStreamUrlResponse {
+    string url = 1;
+}
+
+message ActivateDeviceRequest {
+    string  device_id          = 1;
+}
+
+service Stream {
+    rpc GetPTZInfo (GetPTZInfoRequest) returns (GetPTZInfoResponse);
+    //球机拉框放大
+    rpc DragZoomIn (DragZoomRequest) returns (google.protobuf.Empty);
+    //球机拉框缩小
+    rpc DragZoomOut (DragZoomRequest) returns (google.protobuf.Empty);
+
+    rpc GotoPosition (GotoPositionRequest) returns (google.protobuf.Empty);
+    rpc CapturePicture (CapturePictureRequest) returns (CapturePictureResponse);
+    rpc GetDeviceStatus (GetDeviceStatusRequest) returns (GetDeviceStatusResponse);
+
+    rpc GetPreset  (GetPresetRequest)  returns (GetPresetResponse);
+    rpc SetPreset  (SetPresetRequest)  returns (google.protobuf.Empty);
+    rpc PTZControl  (PTZControlRequest)  returns (google.protobuf.Empty);
+
+    rpc UploadRecord (UploadRecordRequest) returns (UploadRecordResponse);
+
+    rpc UpdateStream (UpdateStreamRequest) returns (google.protobuf.Empty);
+
+    rpc GetStreamUrl (GetStreamUrlRequest) returns (GetStreamUrlResponse);
+
+    rpc ActivateDevice (ActivateDeviceRequest) returns (google.protobuf.Empty);
+}

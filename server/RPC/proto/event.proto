@@ -1,0 +1,55 @@
+syntax = "proto3";
+package vmr_proto;
+
+// import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "git.supremind.info/product/visionmind/proto/go/api";
+
+enum CodecType {
+    CODEC_TYPE_H264     = 0;
+    CODEC_TYPE_H265     = 1;
+    CODEC_TYPE_UNKNOW	= 2;
+}
+
+enum StreamStatusType {
+    STREAM_STATUS_OK    = 0;
+    STREAM_STATUS_ERROR = 1;
+    // 带扩展
+    STREAM_STATUS_UNKNOWN = 99;
+}
+
+message ReportEventRequest {
+    string      device_id    = 1;
+    uint32      time         = 2;
+    string      event_type   = 3;
+    string      event_status = 4;
+    string      comment      = 5;
+}
+
+message Video {
+    int32       height           = 1;
+    int32       width            = 2;
+    CodecType   codec            = 3;
+    int32       rate             = 4;
+    int32       frame_rate       = 5;
+    int32       drop_frame_rate  = 6;
+    int32       recv_frame_num   = 7;
+}
+
+message StreamInfo {
+    string              device_id   = 1;
+    string              duration    = 2;
+    Video               video       = 3;
+    StreamStatusType    status      = 4;
+}
+
+message ReportStreamInfoRequest {
+    string               host        = 1;
+    repeated StreamInfo  infos       = 2;
+}
+
+service EventService {
+    rpc ReportEvent (ReportEventRequest) returns (google.protobuf.Empty);
+    rpc ReportStreamInfo (ReportStreamInfoRequest) returns (google.protobuf.Empty);
+}

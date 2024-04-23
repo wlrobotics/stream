@@ -1,0 +1,2 @@
+systemctl enable stream.service
+update-rc.d stream defaults

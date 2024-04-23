@@ -1,0 +1,16 @@
+[Unit]
+Description=Vmr Stream Serve
+After=network.target vmr-lite.service sysadmin.service
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5
+ExecStart=/usr/local/bin/stream /etc/supremind/
+ExecStartPost=/usr/local/bin/version-notify.sh stream SPECIFIED_VERSION 'stream egde'
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=control-group
+User=root
+
+[Install]
+WantedBy=multi-user.target

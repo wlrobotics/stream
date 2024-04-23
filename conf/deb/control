@@ -1,0 +1,5 @@
+Package: stream
+Version: 0.1
+Architecture: arm64
+Maintainer: SupreMind <videomind@supremind.info>
+Description: VMR Stream Service

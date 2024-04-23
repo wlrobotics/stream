@@ -1,0 +1,86 @@
+{
+    "vmr": {
+        "grpc_endpoint": "internal.main-host.local:10067",
+        "http_endpoint": "internal.main-host.local:10066",
+        "http_token": "",
+        "enable_get_subdevice_info_v2": false
+    },
+    "preview": {
+        "stream_not_found_timeout": 20,
+        "stream_none_reader_timeout": 30,
+        "trace_fps_print_rate": 0
+    },
+    "network": {
+        "epoll_size": 4,
+        "enabled_ipv6": true
+    },
+    "grpc": {
+        "port": 19611
+    },
+    "rtsp": {
+        "port": 554,
+        "ffmpeg_options": {
+            "rtsp_transport": "tcp",
+            "stimeout": "5000000",
+            "fflags": "nobuffer",
+            "analyzeduration": "1"
+        }
+    },
+    "http": {
+        "port": 8088
+    },
+    "debug": {
+        "enable_backtrace": false
+    },
+    "hksdk": {
+        "timeout": 1500,
+        "enable_rtsp": false
+    },
+    "ptz": {
+        "frame_interval": 50,
+        "zoom_max" : 32
+    },
+    "log": {
+        "level": 3
+    },
+    "time_stamp": {
+        "ntp_time_enable": true
+    },
+    "analyzer": {
+        "modify_stamp": true,
+        "trace_fps": false
+    },
+    "live": {
+        "modify_stamp": true,
+        "trace_fps": false
+    },
+    "record": {
+        "enabled": true,
+        "memory_quota": 100,
+        "time_quota": 60,
+        "storage_type": "s3",
+        "local_path": "/home/supre_edge/data/buckets/",
+        "enabled_time_quota": true,
+        "object_tags": "term=short-term",
+        "use_host_style_addr": false,
+        "s3": [
+            {
+                "endpoint": "internal.main-host.local:10066",
+                "outter_endpoint": "internal.main-host.local:10066",
+                "accesskey": "smaitestak",
+                "secretkey": "smaitestsk",
+                "bucket": "default"
+            }
+        ]
+    },
+    "service": {
+        "enabled": false,
+        "ectd_endpoints": [
+            "internal.main-host.local:2379"
+        ],
+        "etcd_root_path": "/vmr/stream_cluster/stream/",
+        "service_ttl": 120,
+        "in_stream_quota": 16,
+        "device_ttl": 20
+    }
+}

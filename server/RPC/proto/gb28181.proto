@@ -1,0 +1,82 @@
+syntax = "proto3";
+package vmr_proto;
+
+import "ptz.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "git.supremind.info/product/visionmind/proto/go/api";
+// ref: https://github.com/gogo/protobuf/blob/master/extensions.md
+// option (gogoproto.equal_all) = true;
+// option (gogoproto.goproto_unrecognized_all) = false;
+// option (gogoproto.populate_all) = true;
+
+
+enum TransType {
+    TRANS_TYPE_TCP = 0;
+    TRANS_TYPE_UDP = 1;
+}
+
+message DeviceInfo {
+    string  device_id     = 1;
+    string  parent_id     = 2;
+    string  device_name   = 3;
+    bool    is_online     = 4;
+    string  longitude     = 5;
+    string  latitude      = 6;
+}
+
+message GetDeviceTreeRequest {
+    string platform_id = 1;
+}
+
+message GetDeviceTreeResponse {
+    repeated DeviceInfo devices = 1;
+}
+
+message CreateStreamGB28181Request {
+    string platform_id = 1;
+    string device_id   = 2;
+    string stream_host = 3;
+    uint32 stream_rtp_port  = 4;
+    TransType trans_type = 5;
+}
+
+message RetrieveStreamGB28181Request {
+    uint32 ssrc = 1;
+}
+
+message RetrieveStreamGB28181Response {
+    string device_id = 1;
+}
+
+message DeleteStreamGB28181Request {
+    string device_id = 1;
+}
+
+message GBGetPresetRequest
+{
+    string      platform_id = 1;
+    GetPresetRequest get_preset_request   = 2;
+}
+
+message GBSetPresetRequest
+{
+    string      platform_id   = 1;
+    SetPresetRequest set_preset_request = 2;
+}
+
+message GBPTZControlRequest
+{
+    string      platform_id = 1;
+    PTZControlRequest  ptz_control_request = 2;
+}
+
+service GB28181 {
+    rpc GetDeviceTree (GetDeviceTreeRequest) returns (GetDeviceTreeResponse);
+    rpc CreateStream  (CreateStreamGB28181Request)  returns (google.protobuf.Empty);
+    rpc RetrieveStream (RetrieveStreamGB28181Request) returns (RetrieveStreamGB28181Response);
+    rpc DeleteStream  (DeleteStreamGB28181Request)  returns (google.protobuf.Empty);
+    rpc GetPreset  (GBGetPresetRequest)  returns (GetPresetResponse);
+    rpc SetPreset  (GBSetPresetRequest)  returns (google.protobuf.Empty);
+    rpc PTZControl  (GBPTZControlRequest)  returns (google.protobuf.Empty);
+}
