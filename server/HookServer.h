@@ -15,7 +15,6 @@ public:
 
     bool init();
 
-    void set_enabled(bool enable);
     int not_found_stream(const mediakit::MediaInfo &args);
     bool none_stream_reader(mediakit::MediaSource &sender);
     bool retrieve_stream(std::uint32_t ssrc, std::string& stream_id);

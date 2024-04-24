@@ -17,18 +17,7 @@ bool HookServer::init() {
     return true;
 }
 
-void HookServer::set_enabled(bool enable) {
-    server_enabled_ = enable;
-}
-
 int HookServer::not_found_stream(const MediaInfo &args) {
-    std::thread::id tid = std::this_thread::get_id();
-    std::string stream_id = args._streamid;
-    InfoL << "stream_id=" << stream_id;
-    if(args._app != LIVE_APP || stream_id.empty()) {
-        return 1;
-    }
-
     return 1;
 }
 
